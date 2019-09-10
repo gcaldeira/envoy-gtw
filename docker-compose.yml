@@ -1,0 +1,39 @@
+version: '3.7'
+services:
+  
+  envoy:
+    build:
+      context: side-gtw
+    ports:
+      - "5050:5050"
+      - "9901:9901"
+  
+  web:
+    image: nginx
+    volumes:
+      - type: bind
+        source: ./web/nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+
+  opa:
+    image: openpolicyagent/opa:0.10.7-envoy
+    volumes:
+      - type: bind
+        source: ./opa/policies
+        target: /policies
+      - type: bind
+        source: ./opa/config
+        target: /config
+    command:
+    - --plugin-dir=.
+    - run
+    - --server
+    - --log-level=debug
+    - --config-file=/config/config.yaml
+    - /policies/policy.rego
+    expose:
+      - "9191"
+    ports:
+      - "9191:9191"
